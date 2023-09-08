@@ -1,3 +1,5 @@
+<?php
+
 function create_actornot_page() {
     $page = get_page_by_path('actornot');
     
