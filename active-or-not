@@ -1,0 +1,64 @@
+function create_actornot_page() {
+    $page = get_page_by_path('actornot');
+    
+    if (!$page) {
+        $page_id = wp_insert_post(array(
+            'post_title' => 'Actor Not Page',
+            'post_name' => 'actornot',
+            'post_content' => '[actornot_membership_checker]',
+            'post_status' => 'publish',
+            'post_type' => 'page'
+        ));
+    }
+}
+add_action('init', 'create_actornot_page');
+
+function actornot_membership_checker_shortcode($atts) {
+    if (isset($_POST['user_id'])) {
+        $user_id = intval($_POST['user_id']);
+        
+        // Retrieve the user by ID
+        $user = new MeprUser($user_id);
+
+        // Get active membership IDs
+        $active_membership_ids = $user->active_product_subscriptions('ids');
+
+        $titles = array();
+        if (!empty($active_membership_ids)) {
+            foreach ($active_membership_ids as $id) {
+                $membership = new MeprProduct($id);
+                $titles[] = $membership->post_title;
+            }
+        }
+
+        ob_start();
+        if (!empty($titles)) {
+            echo "<h2>Active Subscriptions for User $user_id:</h2>";
+            echo "<ul>";
+            foreach ($titles as $title) {
+                echo "<li>$title</li>";
+            }
+            echo "</ul>";
+        } else {
+            echo "User $user_id does not have any active memberships.";
+        }
+        $output = ob_get_clean();
+    }
+
+    // Display the input form and results
+    ob_start();
+    ?>
+    <form method="post">
+        <label for="user_id">User ID:</label>
+        <input type="text" name="user_id" id="user_id" required>
+        <input type="submit" value="Check Memberships">
+    </form>
+
+    <?php if (isset($output)) : ?>
+        <div><?php echo $output; ?></div>
+    <?php endif; ?>
+
+    <?php
+    return ob_get_clean();
+}
+add_shortcode('actornot_membership_checker', 'actornot_membership_checker_shortcode');
